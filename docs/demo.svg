@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="640" viewBox="0 0 1080 640" role="img" aria-labelledby="title desc">
+  <title id="title">cite-helper terminal demo</title>
+  <desc id="desc">A terminal screenshot showing cite-helper returning sentence-level citation matches for a claim.</desc>
+  <rect width="1080" height="640" rx="18" fill="#0d1117"/>
+  <rect x="0" y="0" width="1080" height="46" rx="18" fill="#161b22"/>
+  <circle cx="28" cy="23" r="7" fill="#ff5f56"/>
+  <circle cx="52" cy="23" r="7" fill="#ffbd2e"/>
+  <circle cx="76" cy="23" r="7" fill="#27c93f"/>
+  <text x="100" y="29" fill="#8b949e" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14">cite-helper demo</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">
+    <text x="32" y="86" fill="#58a6ff">$ cite-helper find "politeness strategies vary across cultures" -k 5</text>
+    <text x="32" y="132" fill="#c9d1d9">Top 5 matches for: 'politeness strategies vary across cultures'</text>
+
+    <text x="32" y="184" fill="#7ee787">[1] score=0.880  [P21_Yang_et_al] · chunk_2</text>
+    <text x="64" y="214" fill="#f0f6fc">These findings suggest that apologies are simultaneously universal and culture-specific:</text>
+    <text x="64" y="244" fill="#f0f6fc">the basic strategies appear across languages, but their pragmatic deployment reflects</text>
+    <text x="64" y="274" fill="#f0f6fc">distinct cultural logics.</text>
+    <text x="64" y="304" fill="#8b949e">sent_id=S_b507a5d222a9  paper=Yang et al</text>
+
+    <text x="32" y="358" fill="#7ee787">[2] score=0.878  [P21_Yang_et_al] · 2. Literature review</text>
+    <text x="64" y="388" fill="#f0f6fc">These strategies are broadly available across languages, but their frequency and</text>
+    <text x="64" y="418" fill="#f0f6fc">distribution vary depending on cultural norms, social distance, and power relations.</text>
+    <text x="64" y="448" fill="#8b949e">sent_id=S_7d0352b66fa6  paper=Yang et al</text>
+
+    <text x="32" y="502" fill="#7ee787">[3] score=0.877  [P02_Flores_Salgado_Castineira_Benitez] · chunk_4</text>
+    <text x="64" y="532" fill="#f0f6fc">Linguistic politeness is conceptualized differently by different cultures.</text>
+    <text x="64" y="562" fill="#8b949e">sent_id=S_571edd0f6e1a  paper=Flores-Salgado &amp; Castineira-Benitez</text>
+  </g>
+</svg>

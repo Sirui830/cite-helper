@@ -1,5 +1,10 @@
 # cite-helper
 
+[![CI](https://github.com/Sirui830/cite-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/Sirui830/cite-helper/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://github.com/Sirui830/cite-helper)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-beta-orange.svg)](https://github.com/Sirui830/cite-helper/releases)
+
 > Sentence-level citation retrieval over a folder of academic PDFs.
 > Find the right verbatim quote in your reference library, in <1 second.
 
@@ -10,10 +15,13 @@ section info, so you can cite the right source — verbatim.
 Built for academic writing workflows where you've already collected
 the papers you want to cite, and you just need to surface the right one.
 
+![cite-helper terminal demo](docs/demo.svg)
+
 ## Quick start
 
 ```bash
-pip install -e .
+# Install directly from GitHub
+pip install git+https://github.com/Sirui830/cite-helper.git
 
 cd ~/my-references               # any folder with PDFs
 
@@ -22,6 +30,20 @@ cite-helper find "politeness strategies vary across cultures"
 
 # Subsequent queries are instant
 cite-helper find "rapport management framework"
+```
+
+For an isolated CLI install, use `pipx`:
+
+```bash
+pipx install git+https://github.com/Sirui830/cite-helper.git
+```
+
+For local development:
+
+```bash
+git clone https://github.com/Sirui830/cite-helper.git
+cd cite-helper
+pip install -e ".[dev]"
 ```
 
 Output looks like this:
