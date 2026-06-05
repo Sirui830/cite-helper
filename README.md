@@ -30,6 +30,10 @@ cite-helper find "politeness strategies vary across cultures"
 
 # Subsequent queries are instant
 cite-helper find "rapport management framework"
+
+# Focus search when you already know the likely paper or section
+cite-helper find "WeChat users prefer direct requests" \
+  --paper Liu --section Conclusion --show-context 2
 ```
 
 For an isolated CLI install, use `pipx`:
@@ -82,6 +86,11 @@ cite-helper build ./target --from-source-index outputs/source_index.jsonl
 # Semantic search (auto-builds index if missing and folder has ≤30 PDFs)
 cite-helper find "your claim" [-k 5] [--json] [--folder PATH]
 
+# Focus retrieval and control context display
+cite-helper find "your claim" --paper Liu --section Discussion
+cite-helper find "your claim" --show-context 2
+cite-helper find "your claim" --no-context
+
 # Verify a verbatim quote exists in the corpus
 cite-helper verify "exact text from a paper"
 
@@ -97,8 +106,12 @@ cite-helper stats
   E5 `query:` / `passage:` prefix convention)
 - **Filtering**: drops References / Bibliography / Acknowledgments /
   Funding sections; deduplicates identical sentences within a paper;
-  heuristically skips reference-list entries that survive
+  heuristically skips reference-list entries and standalone title-like
+  sentences that survive
 - **Retrieval**: cosine similarity on L2-normalized embeddings
+- **Focused search**: optional `--paper` and `--section` filters narrow the
+  candidate pool before ranking, while `--include-noise` lets you inspect
+  raw title/reference-like hits if needed
 
 ## Index format
 
@@ -207,7 +220,7 @@ pytest -xvs tests/
 CITE_HELPER_TEST_FOLDER=/path/to/index pytest -xvs tests/
 ```
 
-24 regression tests covering 21 queries + dedup + verify.
+27 regression tests covering 21 queries + dedup + verify + focused filters.
 
 ## License
 

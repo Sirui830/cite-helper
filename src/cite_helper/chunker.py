@@ -14,6 +14,20 @@ from .schemas import IndexedSentence, DEFAULT_MODEL_NAME, INDEX_VERSION
 MIN_SENT_LEN = 25
 MAX_SENT_LEN = 500
 CONTEXT_WINDOW = 1  # ±N sentences shown around each hit
+FINITE_VERB_RE = re.compile(
+    r"\b("
+    r"is|are|was|were|be|being|been|"
+    r"has|have|had|do|does|did|"
+    r"show|shows|showed|shown|find|finds|found|"
+    r"suggest|suggests|suggested|indicate|indicates|indicated|"
+    r"argue|argues|argued|examine|examines|examined|"
+    r"investigate|investigates|investigated|use|uses|used|"
+    r"reveal|reveals|revealed|demonstrate|demonstrates|demonstrated|"
+    r"employ|employs|employed|prefer|prefers|preferred|"
+    r"vary|varies|varied|affect|affects|affected"
+    r")\b",
+    re.IGNORECASE,
+)
 
 
 def _normalize_for_dedup(text: str) -> str:
@@ -33,6 +47,59 @@ def _looks_like_reference_entry(sentence: str) -> bool:
     if re.search(r"\b(19|20)\d{2}[a-z]?\b.*\.\s*[A-Z]", sentence) and (
         sentence.count(",") >= 3 or re.search(r"\bpp?\.\s*\d", sentence)
     ):
+        return True
+    if re.search(r"\bdoi\b|https?://|www\.|journal of|vol(?:ume)?\.", sentence, re.I):
+        return True
+    if re.search(r"\b(19|20)\d{2}[a-z]?\b", sentence) and re.search(
+        r"\b(pp?\.|pages?|press|publisher|routledge|elsevier|springer|wiley)\b",
+        sentence,
+        re.I,
+    ):
+        return True
+    return False
+
+
+def _looks_like_title_sentence(sentence: str, section: str = "") -> bool:
+    """Catch standalone article/book titles that are not usable evidence."""
+    s = re.sub(r"\s+", " ", sentence).strip()
+    if not s:
+        return True
+    words = re.findall(r"[A-Za-z][A-Za-z'-]*", s)
+    if not (4 <= len(words) <= 22):
+        return False
+
+    section_norm = section.lower().strip(" :.")
+    likely_title_section = section_norm in {"header", "title"} or section_norm.startswith(
+        "chunk_"
+    )
+    has_colon = ":" in s
+    has_finite_verb = FINITE_VERB_RE.search(s) is not None
+    starts_like_title = re.match(
+        r"^(a|an|the|towards?|toward|responding|request|requests|"
+        r"politeness|impoliteness|disagreeing|compliment|compliments|"
+        r"computer-mediated|cross-cultural|intercultural|self-praise|"
+        r"modeling|modelling|studying|understanding|exploring|teaching|"
+        r"learning|making|communicating)\b",
+        s,
+        re.I,
+    )
+    title_case_words = sum(1 for w in words if w[:1].isupper())
+    title_case_ratio = title_case_words / max(1, len(words))
+
+    if likely_title_section and not has_finite_verb and (has_colon or starts_like_title):
+        return True
+    if has_colon and not has_finite_verb and title_case_ratio >= 0.35:
+        return True
+    if starts_like_title and not has_finite_verb and s.endswith("."):
+        return True
+    return False
+
+
+def is_retrieval_noise(sentence: str, section: str = "") -> bool:
+    """Return True for sentences that should not appear as citation hits."""
+    if _looks_like_reference_entry(sentence):
+        return True
+    if _looks_like_title_sentence(sentence, section=section):
         return True
     return False
 
@@ -68,7 +135,7 @@ def chunk_sections(
         for i, s in enumerate(raw_sentences):
             if not (MIN_SENT_LEN <= len(s) <= MAX_SENT_LEN):
                 continue
-            if _looks_like_reference_entry(s):
+            if is_retrieval_noise(s, section=section.section):
                 continue
             filtered_pairs.append((i, s))
 

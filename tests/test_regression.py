@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pytest
 
+from cite_helper.chunker import is_retrieval_noise
 from cite_helper.retriever import Index
 
 
@@ -103,6 +104,13 @@ def test_query_returns_clean_results(
             f"reference-list-like hit for {query!r}: "
             f"{hit.sentence.sentence[:100]!r}"
         )
+        assert not is_retrieval_noise(
+            hit.sentence.sentence, section=hit.sentence.section
+        ), (
+            f"title/reference-like hit for {query!r}: "
+            f"section={hit.sentence.section!r}, "
+            f"sentence={hit.sentence.sentence[:100]!r}"
+        )
 
     if expected_paper is not None:
         keys = [h.sentence.citation_key for h in hits]
@@ -120,6 +128,55 @@ def test_no_duplicate_sentences_in_top10(idx: Index) -> None:
     assert len(texts) == len(set(texts)), (
         f"duplicate sentences in top-10: {texts}"
     )
+
+
+def test_title_like_sentences_are_filtered() -> None:
+    assert is_retrieval_noise(
+        "Responding to compliments: A contrastive study of politeness strategies.",
+        section="References",
+    )
+    assert is_retrieval_noise(
+        "Modeling politeness variation across different social factors.",
+        section="chunk_33",
+    )
+    assert not is_retrieval_noise(
+        "This study investigated requests made by younger and older Chinese people on social media.",
+        section="6. Conclusion",
+    )
+
+
+def test_find_can_filter_by_paper_and_section(idx: Index) -> None:
+    hits = idx.find(
+        "WeChat users prefer direct requests",
+        k=5,
+        paper="Liu",
+        section="Conclusion",
+        context_window=2,
+    )
+    assert hits
+    for hit in hits:
+        assert "liu" in (
+            hit.sentence.paper_id
+            + " "
+            + hit.sentence.citation_key
+            + " "
+            + hit.sentence.pdf_path
+        ).lower()
+        assert "conclusion" in hit.sentence.section.lower()
+    top = hits[0].to_dict()
+    assert top["context_before"] or top["context_after"]
+
+
+def test_find_can_hide_context(idx: Index) -> None:
+    hits = idx.find(
+        "politeness strategies vary across cultures",
+        k=1,
+        context_window=0,
+    )
+    assert hits
+    top = hits[0].to_dict()
+    assert top["context_before"] == ""
+    assert top["context_after"] == ""
 
 
 def test_verify_finds_exact_quote(idx: Index) -> None:

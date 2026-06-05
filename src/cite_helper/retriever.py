@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 
+from .chunker import is_retrieval_noise
 from .embedder import Embedder
 from .indexer import INDEX_DIRNAME, index_dir
 from .schemas import IndexedSentence
@@ -18,13 +19,20 @@ class SearchHit:
     rank: int
     score: float
     sentence: IndexedSentence
+    context_before: str | None = None
+    context_after: str | None = None
 
     def to_dict(self) -> dict:
-        return {
+        data = {
             "rank": self.rank,
             "score": self.score,
             **self.sentence.to_dict(),
         }
+        if self.context_before is not None:
+            data["context_before"] = self.context_before
+        if self.context_after is not None:
+            data["context_after"] = self.context_after
+        return data
 
 
 class Index:
@@ -51,6 +59,20 @@ class Index:
                 f"({self.embeddings.shape[0]} vs {len(self.sentences)})"
             )
         self._embedder: Embedder | None = None
+        self._chunk_sentence_indices: dict[str, list[int]] = {}
+        for i, sentence in enumerate(self.sentences):
+            self._chunk_sentence_indices.setdefault(
+                sentence.source_chunk_id, []
+            ).append(i)
+        for indices in self._chunk_sentence_indices.values():
+            indices.sort(
+                key=lambda i: (
+                    self.sentences[i].char_start < 0,
+                    self.sentences[i].char_start
+                    if self.sentences[i].char_start >= 0
+                    else i,
+                )
+            )
 
     @property
     def embedder(self) -> Embedder:
@@ -58,24 +80,96 @@ class Index:
             self._embedder = Embedder(model_name=self.meta["model_name"])
         return self._embedder
 
-    def find(self, query: str, k: int = 5) -> list[SearchHit]:
+    @staticmethod
+    def _matches_text_filter(value: str, needle: str | None) -> bool:
+        if not needle:
+            return True
+        return needle.lower() in value.lower()
+
+    def _candidate_indices(
+        self,
+        paper: str | None = None,
+        section: str | None = None,
+        include_noise: bool = False,
+    ) -> list[int]:
+        indices: list[int] = []
+        for i, sentence in enumerate(self.sentences):
+            if paper:
+                paper_haystack = " ".join(
+                    [
+                        sentence.paper_id,
+                        sentence.citation_key,
+                        Path(sentence.pdf_path).name,
+                    ]
+                )
+                if not self._matches_text_filter(paper_haystack, paper):
+                    continue
+            if section and not self._matches_text_filter(sentence.section, section):
+                continue
+            if not include_noise and is_retrieval_noise(
+                sentence.sentence, section=sentence.section
+            ):
+                continue
+            indices.append(i)
+        return indices
+
+    def _context_for_index(self, index: int, context_window: int) -> tuple[str, str]:
+        if context_window <= 0:
+            return "", ""
+        sentence = self.sentences[index]
+        chunk_indices = self._chunk_sentence_indices.get(sentence.source_chunk_id, [])
+        try:
+            pos = chunk_indices.index(index)
+        except ValueError:
+            return sentence.context_before, sentence.context_after
+        before_indices = chunk_indices[max(0, pos - context_window):pos]
+        after_indices = chunk_indices[pos + 1:pos + 1 + context_window]
+        before = " ".join(self.sentences[i].sentence for i in before_indices)
+        after = " ".join(self.sentences[i].sentence for i in after_indices)
+        return before, after
+
+    def find(
+        self,
+        query: str,
+        k: int = 5,
+        paper: str | None = None,
+        section: str | None = None,
+        context_window: int = 1,
+        include_noise: bool = False,
+    ) -> list[SearchHit]:
+        if k <= 0:
+            return []
+        candidate_indices = self._candidate_indices(
+            paper=paper,
+            section=section,
+            include_noise=include_noise,
+        )
+        if not candidate_indices:
+            return []
         q_emb = self.embedder.embed_query(query)
         with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
             sims = self.embeddings @ q_emb
         sims = np.nan_to_num(sims, nan=-1.0, posinf=-1.0, neginf=-1.0)
-        if k >= len(sims):
-            top_idx = np.argsort(-sims)
+        candidate_sims = sims[candidate_indices]
+        if k >= len(candidate_sims):
+            selected_pos = np.argsort(-candidate_sims)
         else:
-            top_idx = np.argpartition(-sims, k)[:k]
-            top_idx = top_idx[np.argsort(-sims[top_idx])]
-        return [
-            SearchHit(
-                rank=rank + 1,
-                score=float(sims[i]),
-                sentence=self.sentences[i],
+            selected_pos = np.argpartition(-candidate_sims, k - 1)[:k]
+            selected_pos = selected_pos[np.argsort(-candidate_sims[selected_pos])]
+        hits: list[SearchHit] = []
+        for rank, pos in enumerate(selected_pos, start=1):
+            i = candidate_indices[int(pos)]
+            before, after = self._context_for_index(i, context_window)
+            hits.append(
+                SearchHit(
+                    rank=rank,
+                    score=float(sims[i]),
+                    sentence=self.sentences[i],
+                    context_before=before,
+                    context_after=after,
+                )
             )
-            for rank, i in enumerate(top_idx)
-        ]
+        return hits
 
     def verify(self, text: str) -> list[SearchHit]:
         """Find sentences whose normalized form contains the given text.

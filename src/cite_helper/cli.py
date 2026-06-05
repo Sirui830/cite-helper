@@ -100,7 +100,15 @@ def cmd_find(args: argparse.Namespace) -> int:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
-    hits = idx.find(args.query, k=args.k)
+    context_window = 0 if args.no_context else max(0, args.show_context)
+    hits = idx.find(
+        args.query,
+        k=args.k,
+        paper=args.paper,
+        section=args.section,
+        context_window=context_window,
+        include_noise=args.include_noise,
+    )
     hit_dicts = [h.to_dict() for h in hits]
 
     if args.json:
@@ -193,6 +201,36 @@ def main() -> int:
         dest="k",
     )
     p_find.add_argument("--json", action="store_true", help="Output as JSON")
+    p_find.add_argument(
+        "--paper",
+        default=None,
+        help=(
+            "Only search papers whose paper_id, citation_key, or PDF filename "
+            "contains this text"
+        ),
+    )
+    p_find.add_argument(
+        "--section",
+        default=None,
+        help="Only search sections whose label contains this text",
+    )
+    p_find.add_argument(
+        "--show-context",
+        type=int,
+        default=1,
+        metavar="N",
+        help="Show N neighboring indexed sentences on each side (default: 1)",
+    )
+    p_find.add_argument(
+        "--no-context",
+        action="store_true",
+        help="Hide surrounding context in human-readable output",
+    )
+    p_find.add_argument(
+        "--include-noise",
+        action="store_true",
+        help="Include title/reference-like sentences normally hidden from results",
+    )
     p_find.add_argument(
         "--no-auto-build",
         action="store_true",

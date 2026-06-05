@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Add focused retrieval filters: `find --paper` and `find --section`
+- Add context display controls: `find --show-context N` and `find --no-context`
+- Hide title/reference-like sentences from default search results, with
+  `--include-noise` as an escape hatch
+- Expand regression coverage for focused filters and title-like noise
+
 ## 0.1.0 (2026-06-05)
 
 Initial release.
