@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cite-helper"
+version = "0.1.0"
+description = "Sentence-level citation retrieval over a folder of academic PDFs. Built for writing literature reviews — index your reference library once, then find verbatim sentences that match a claim you wrote."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "siri" },
+]
+keywords = [
+    "literature-review",
+    "citation",
+    "academic-writing",
+    "rag",
+    "semantic-search",
+    "sentence-embeddings",
+    "pdf",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Text Processing :: Linguistic",
+]
+dependencies = [
+    "pymupdf4llm>=0.0.10",
+    "pysbd>=0.3.4",
+    "sentence-transformers>=2.7.0",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.urls]
+Homepage = "https://github.com/USERNAME/cite-helper"
+Repository = "https://github.com/USERNAME/cite-helper"
+Issues = "https://github.com/USERNAME/cite-helper/issues"
+
+[project.scripts]
+cite-helper = "cite_helper.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
