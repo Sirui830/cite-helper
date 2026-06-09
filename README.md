@@ -6,7 +6,8 @@
 [![Status](https://img.shields.io/badge/status-beta-orange.svg)](https://github.com/Sirui830/cite-helper/releases)
 
 > Sentence-level citation retrieval over a folder of academic PDFs.
-> Find the right verbatim quote in your reference library, in <1 second.
+> Find candidate verbatim quotes from your indexed PDF library without
+> manually scrolling through papers.
 
 You write a sentence in your draft. cite-helper returns the most
 semantically similar sentences from your PDF library, with paper and
@@ -28,7 +29,7 @@ cd ~/my-references               # any folder with PDFs
 # First query auto-builds the index (~1-2 min per 10 PDFs)
 cite-helper find "politeness strategies vary across cultures"
 
-# Subsequent queries are instant
+# Subsequent queries reuse the saved index
 cite-helper find "rapport management framework"
 
 # Focus search when you already know the likely paper or section
@@ -71,8 +72,9 @@ typically:
 - You spend 10 minutes scrolling the PDF
 - You eventually find the right sentence and quote it
 
-cite-helper does step 3 in <1s by indexing your PDFs at the sentence
-level with `multilingual-e5-small` embeddings.
+cite-helper speeds up step 3 by indexing your PDFs at the sentence
+level with `multilingual-e5-small` embeddings, then reusing that saved
+index for later searches.
 
 ## Commands
 
@@ -157,7 +159,7 @@ Then in opencode:
 ```
 
 First query in a new folder auto-builds the index (~1-2 min per 10 PDFs).
-Subsequent queries are instant.
+Subsequent queries reuse the saved index and should be much faster.
 
 ### Claude Code
 
